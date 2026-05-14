@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Open Linux Distribution Selector</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ── TOKENS ───────────────────────────────────────────────── */
+    :root {
+      --bg:          #f8f9fa;
+      --surface:     #ffffff;
+      --surface2:    #f1f3f5;
+      --border:      #dee2e6;
+      --border-h:    #adb5bd;
+      --text:        #212529;
+      --text-2:      #495057;
+      --text-3:      #868e96;
+      --accent:      #2f7be8;
+      --accent-bg:   #e8f0fd;
+      --accent-dark: #1a5fc4;
+      --green:       #2a9d5c;
+      --green-bg:    #e6f5ed;
+      --red:         #e03e3e;
+      --red-bg:      #fdf0f0;
+      --shadow-sm:   0 1px 3px rgba(0,0,0,0.07),0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md:   0 4px 16px rgba(0,0,0,0.09);
+      --r:           14px;
+      --r-sm:        8px;
+      --t:           0.22s ease;
+    }
+    html.dark {
+      --bg:          #0f1117;
+      --surface:     #1a1d27;
+      --surface2:    #22263a;
+      --border:      #2e3347;
+      --border-h:    #4a5168;
+      --text:        #e8eaf0;
+      --text-2:      #a8afc0;
+      --text-3:      #636b80;
+      --accent:      #5b9cf6;
+      --accent-bg:   #1a2440;
+      --accent-dark: #7bb3ff;
+      --green:       #3dbf72;
+      --green-bg:    #0e2418;
+      --red:         #f06060;
+      --red-bg:      #2a1010;
+      --shadow-sm:   0 1px 3px rgba(0,0,0,0.3);
+      --shadow-md:   0 4px 16px rgba(0,0,0,0.4);
+    }
+
+    /* ── RESET ────────────────────────────────────────────────── */
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{
+      background:var(--bg);color:var(--text);
+      font-family:'Inter',sans-serif;min-height:100vh;
+      transition:background var(--t),color var(--t);
+    }
+
+    /* ── PAGE ─────────────────────────────────────────────────── */
+    .page{max-width:860px;margin:0 auto;padding:0 20px 80px}
+
+    /* ── HERO ─────────────────────────────────────────────────── */
+    .hero{padding:48px 0 32px;text-align:center;position:relative}
+    .theme-toggle{
+      position:absolute;top:48px;right:0;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:20px;padding:6px 14px;cursor:pointer;
+      font-size:0.78rem;font-family:'JetBrains Mono',monospace;
+      color:var(--text-2);display:flex;align-items:center;gap:6px;
+      transition:border-color var(--t),background var(--t);
+      box-shadow:var(--shadow-sm);white-space:nowrap;
+    }
+    .theme-toggle:hover{border-color:var(--border-h)}
+    .hero h1{
+      font-size:clamp(1.55rem,4vw,2.3rem);font-weight:700;
+      line-height:1.2;letter-spacing:-0.02em;margin-bottom:12px;padding-top:6px;
+    }
+    .hero p{font-size:1rem;color:var(--text-2);max-width:520px;margin:0 auto;line-height:1.65}
+    hr.divider{border:none;border-top:1px solid var(--border);margin:28px 0}
+
+    /* ── PROGRESS ─────────────────────────────────────────────── */
+    .progress{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:32px}
+    .pd{
+      width:8px;height:8px;border-radius:50%;background:var(--border);
+      transition:background 0.3s,transform 0.3s;
+    }
+    .pd.done{background:var(--green)}
+    .pd.active{background:var(--accent);transform:scale(1.4)}
+
+    /* ── STEP ─────────────────────────────────────────────────── */
+    .step{display:none}
+    .step.active{display:block;animation:stepIn 0.35s ease forwards}
+    @keyframes stepIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+    .step-header{margin-bottom:28px;text-align:center}
+    .step-header h2{font-size:clamp(1.15rem,3vw,1.5rem);font-weight:700;letter-spacing:-0.01em;margin-bottom:6px}
+    .step-header p{font-size:0.84rem;color:var(--text-3);font-family:'JetBrains Mono',monospace}
+
+    /* back button */
+    .back-btn{
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:0.82rem;color:var(--text-3);background:none;border:none;
+      cursor:pointer;padding:0;margin-bottom:24px;font-family:'Inter',sans-serif;
+      transition:color var(--t);
+    }
+    .back-btn:hover{color:var(--text-2)}
+
+    /* ── TIMELINE ─────────────────────────────────────────────── */
+    .timeline-wrap{position:relative}
+
+    /* horizontal track – desktop */
+    .tl-line-h{
+      display:none;
+      position:absolute;top:21px;left:12.5%;right:12.5%;
+      height:3px;background:linear-gradient(90deg,#3b82f6,#10b981);
+      border-radius:2px;transform:scaleX(0);transform-origin:left;
+      animation:trackH 0.7s 0.5s cubic-bezier(0.4,0,0.2,1) forwards;
+    }
+    @media(min-width:640px){.tl-line-h{display:block}}
+    @keyframes trackH{to{transform:scaleX(1)}}
+
+    /* vertical track – mobile */
+    .tl-line-v{
+      display:block;position:absolute;
+      left:21px;top:21px;bottom:21px;width:3px;
+      background:linear-gradient(180deg,#3b82f6,#10b981);
+      border-radius:2px;transform:scaleY(0);transform-origin:top;
+      animation:trackV 0.7s 0.5s cubic-bezier(0.4,0,0.2,1) forwards;
+    }
+    @media(min-width:640px){.tl-line-v{display:none}}
+    @keyframes trackV{to{transform:scaleY(1)}}
+
+    .eras{
+      display:flex;flex-direction:column;gap:18px;
+      position:relative;z-index:2;
+    }
+    @media(min-width:640px){.eras{flex-direction:row;gap:10px}}
+
+    /* era item */
+    .era-item{display:flex;align-items:flex-start;gap:14px;opacity:0}
+    @media(min-width:640px){.era-item{flex-direction:column;align-items:center;flex:1;gap:0}}
+    .era-item:nth-child(1){animation:eraIn 0.4s 0.8s forwards}
+    .era-item:nth-child(2){animation:eraIn 0.4s 1.0s forwards}
+    .era-item:nth-child(3){animation:eraIn 0.4s 1.2s forwards}
+    .era-item:nth-child(4){animation:eraIn 0.4s 1.4s forwards}
+    @keyframes eraIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+    /* dot */
+    .era-dot{
+      flex-shrink:0;width:42px;height:42px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;font-size:1.2rem;
+      background:var(--surface);border:3px solid var(--surface);
+      box-shadow:0 0 0 2px var(--border);
+      animation:dotBounce 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    .era-item:nth-child(1) .era-dot{animation-delay:0.85s}
+    .era-item:nth-child(2) .era-dot{animation-delay:1.05s}
+    .era-item:nth-child(3) .era-dot{animation-delay:1.25s}
+    .era-item:nth-child(4) .era-dot{animation-delay:1.45s}
+    @keyframes dotBounce{
+      0%{transform:scale(0)}60%{transform:scale(1.2)}80%{transform:scale(0.93)}100%{transform:scale(1)}
+    }
+    @media(min-width:640px){.era-dot{margin-bottom:12px}}
+
+    /* era card */
+    .era-card{
+      background:var(--surface);border:2px solid var(--border);
+      border-radius:var(--r);padding:15px;cursor:pointer;flex:1;
+      transition:border-color var(--t),box-shadow var(--t),transform var(--t),background var(--t);
+      box-shadow:var(--shadow-sm);
+    }
+    @media(min-width:640px){.era-card{text-align:center;width:100%;flex:unset}}
+    .era-card:hover{border-color:var(--accent);box-shadow:var(--shadow-md);transform:translateY(-2px)}
+    .era-card.selected{border-color:var(--accent);background:var(--accent-bg)}
+    .era-card h3{font-size:0.95rem;font-weight:700;margin-bottom:2px}
+    .era-card .years{
+      font-family:'JetBrains Mono',monospace;font-size:0.68rem;
+      color:var(--accent);margin-bottom:7px;display:block;
+    }
+    .era-card p{font-size:0.76rem;line-height:1.55;color:var(--text-2)}
+    .era-card strong{color:var(--text)}
+
+    /* ── EXPERIENCE GRID ──────────────────────────────────────── */
+    .exp-grid{
+      display:grid;grid-template-columns:1fr 1fr;gap:14px;
+      max-width:540px;margin:0 auto;
+    }
+    .exp-card{
+      background:var(--surface);border:2px solid var(--border);
+      border-radius:var(--r);padding:20px 16px;cursor:pointer;text-align:center;
+      transition:border-color var(--t),box-shadow var(--t),transform var(--t),background var(--t);
+      box-shadow:var(--shadow-sm);
+    }
+    .exp-card:hover{border-color:var(--accent);box-shadow:var(--shadow-md);transform:translateY(-2px)}
+    .exp-card.selected{border-color:var(--accent);background:var(--accent-bg)}
+    .exp-card .icon{font-size:1.9rem;margin-bottom:8px;display:block}
+    .exp-card h3{font-size:0.92rem;font-weight:700;margin-bottom:4px}
+    .exp-card p{font-size:0.74rem;color:var(--text-2);line-height:1.5}
+
+    /* ── YES / NO ─────────────────────────────────────────────── */
+    .yn-wrap{display:flex;gap:14px;justify-content:center;max-width:400px;margin:0 auto}
+    .yn-card{
+      flex:1;background:var(--surface);border:2px solid var(--border);
+      border-radius:var(--r);padding:26px 18px;cursor:pointer;text-align:center;
+      transition:border-color var(--t),box-shadow var(--t),transform var(--t),background var(--t);
+      box-shadow:var(--shadow-sm);
+    }
+    .yn-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+    .yn-card.yes:hover,.yn-card.yes.selected{border-color:var(--green);background:var(--green-bg)}
+    .yn-card.no:hover,.yn-card.no.selected{border-color:var(--red);background:var(--red-bg)}
+    .yn-card .yn-icon{font-size:2.2rem;margin-bottom:8px;display:block}
+    .yn-card h3{font-size:0.98rem;font-weight:700}
+    .yn-card p{font-size:0.74rem;color:var(--text-2);margin-top:4px;line-height:1.4}
+
+    /* ── RESULTS ──────────────────────────────────────────────── */
+    .result-summary{
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--r);padding:14px 18px;margin-bottom:24px;
+      font-size:0.8rem;color:var(--text-2);font-family:'JetBrains Mono',monospace;
+      line-height:1.8;
+    }
+    .result-summary span{color:var(--accent)}
+
+    .distros{display:flex;flex-direction:column;gap:14px}
+
+    .distro-card{
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--r);padding:20px;box-shadow:var(--shadow-sm);
+      transition:box-shadow var(--t),transform var(--t);
+      opacity:0;animation:fadeUp 0.4s forwards;
+    }
+    .distro-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+    .distro-card:nth-child(1){animation-delay:0.05s}
+    .distro-card:nth-child(2){animation-delay:0.15s}
+    .distro-card:nth-child(3){animation-delay:0.25s}
+
+    .distro-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}
+    .distro-name{font-size:1.02rem;font-weight:700}
+    .distro-badge{
+      font-family:'JetBrains Mono',monospace;font-size:0.63rem;
+      letter-spacing:0.06em;text-transform:uppercase;
+      padding:3px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0;
+    }
+    .bg-green{background:var(--green-bg);color:var(--green)}
+    .bg-blue{background:var(--accent-bg);color:var(--accent-dark)}
+    .distro-desc{font-size:0.82rem;color:var(--text-2);line-height:1.6;margin-bottom:10px}
+    .why-box{
+      background:var(--surface2);border-left:3px solid var(--accent);
+      border-radius:0 var(--r-sm) var(--r-sm) 0;
+      padding:9px 13px;font-size:0.77rem;color:var(--text-2);
+      line-height:1.55;margin-bottom:12px;
+    }
+    .why-box strong{color:var(--text)}
+    .distro-link{
+      font-family:'JetBrains Mono',monospace;font-size:0.71rem;
+      color:var(--accent);text-decoration:none;
+      display:inline-flex;align-items:center;gap:4px;
+      transition:gap var(--t);
+    }
+    .distro-link:hover{gap:8px}
+
+    .restart-btn{
+      display:block;margin:28px auto 0;background:none;
+      border:1px solid var(--border);border-radius:var(--r-sm);
+      padding:9px 22px;font-size:0.82rem;font-family:'Inter',sans-serif;
+      color:var(--text-3);cursor:pointer;
+      transition:border-color var(--t),color var(--t);
+    }
+    .restart-btn:hover{border-color:var(--border-h);color:var(--text-2)}
+
+    @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HERO -->
+  <header class="hero">
+    <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">
+      <span id="themeIcon">🌙</span>
+      <span id="themeLabel">Dark mode</span>
+    </button>
+    <h1>Open Linux Distribution Selector</h1>
+    <p>Welcome! This tool helps newcomers of all skill levels find a distribution that fits their computer hardware.</p>
+  </header>
+
+  <hr class="divider" />
+
+  <!-- PROGRESS -->
+  <div class="progress" id="progressBar">
+    <div class="pd active" id="pd1"></div>
+    <div class="pd" id="pd2"></div>
+    <div class="pd" id="pd3"></div>
+    <div class="pd" id="pd4"></div>
+  </div>
+
+  <!-- ══ STEP 1: ERA ═══════════════════════════════════════════ -->
+  <div class="step active" id="step1">
+    <div class="step-header">
+      <h2>How old is your computer?</h2>
+      <p>Pick the era closest to when your machine was made.</p>
+    </div>
+
+    <div class="timeline-wrap">
+      <div class="tl-line-h"></div>
+      <div class="tl-line-v"></div>
+      <div class="eras">
+
+        <div class="era-item">
+          <div class="era-dot">📟</div>
+          <div class="era-card" onclick="pick('era','antique',this)">
+            <h3>Antique Era</h3>
+            <span class="years">Pre-2006</span>
+            <p>32-bit CPUs &amp; Non-PAE systems. A shift back to <strong>resource management</strong>. Classic silicon kept functional by choosing the right lightweight distro.</p>
+          </div>
+        </div>
+
+        <div class="era-item">
+          <div class="era-dot">🖥️</div>
+          <div class="era-card" onclick="pick('era','legacy',this)">
+            <h3>Legacy Era</h3>
+            <span class="years">2006 — 2011</span>
+            <p>The <strong>Nvidia Danger Zone</strong>. Success means matching hardware to orphaned 340/390 drivers. Frustrating, yet deeply rewarding once it all clicks.</p>
+          </div>
+        </div>
+
+        <div class="era-item">
+          <div class="era-dot">💻</div>
+          <div class="era-card" onclick="pick('era','golden',this)">
+            <h3>Golden Era</h3>
+            <span class="years">2012 — 2019</span>
+            <p>UEFI powerhouses. Reclaim high-performance machines from <strong>artificial obsolescence</strong>. These often run Linux faster than their original OS.</p>
+          </div>
+        </div>
+
+        <div class="era-item">
+          <div class="era-dot">🚀</div>
+          <div class="era-card" onclick="pick('era','modern',this)">
+            <h3>Modern Era</h3>
+            <span class="years">2020 — Now</span>
+            <p>Wayland, PipeWire, NVMe. You are choosing <strong>standardization</strong> over proprietary ecosystems, using the latest kernels for future-proofed speed.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 2: EXPERIENCE ════════════════════════════════════ -->
+  <div class="step" id="step2">
+    <button class="back-btn" onclick="goTo(1)">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Back
+    </button>
+    <div class="step-header">
+      <h2>How do you use your computer?</h2>
+      <p>This shapes which desktop environment suits you best.</p>
+    </div>
+    <div class="exp-grid">
+      <div class="exp-card" onclick="pick('exp','new',this)">
+        <span class="icon">🌱</span>
+        <h3>New to Linux</h3>
+        <p>Mostly used Windows or macOS. I want an easy transition.</p>
+      </div>
+      <div class="exp-card" onclick="pick('exp','casual',this)">
+        <span class="icon">🌐</span>
+        <h3>Casual User</h3>
+        <p>Web, documents, video calls. I just want it to work.</p>
+      </div>
+      <div class="exp-card" onclick="pick('exp','gamer',this)">
+        <span class="icon">🎮</span>
+        <h3>Gamer</h3>
+        <p>I want Steam, Proton, and solid GPU driver support.</p>
+      </div>
+      <div class="exp-card" onclick="pick('exp','power',this)">
+        <span class="icon">⚙️</span>
+        <h3>Power User</h3>
+        <p>Dev tools, terminals, customization. I like control.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 3: NVIDIA ════════════════════════════════════════ -->
+  <div class="step" id="step3">
+    <button class="back-btn" onclick="goTo(2)">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Back
+    </button>
+    <div class="step-header">
+      <h2>Does this computer have an NVIDIA graphics card?</h2>
+      <p>Check Device Manager on Windows, or look for a sticker. Unsure? Pick No.</p>
+    </div>
+    <div class="yn-wrap">
+      <div class="yn-card yes" onclick="pick('nvidia',true,this)">
+        <span class="yn-icon">✅</span>
+        <h3>Yes</h3>
+        <p>It has an NVIDIA GPU</p>
+      </div>
+      <div class="yn-card no" onclick="pick('nvidia',false,this)">
+        <span class="yn-icon">❌</span>
+        <h3>No</h3>
+        <p>AMD, Intel, or unsure</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 4: BROADCOM ══════════════════════════════════════ -->
+  <div class="step" id="step4">
+    <button class="back-btn" onclick="goTo(3)">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Back
+    </button>
+    <div class="step-header">
+      <h2>Does this computer have a Broadcom WiFi device?</h2>
+      <p>Common in older laptops, MacBooks, HP &amp; Dell machines. Unsure? Pick No.</p>
+    </div>
+    <div class="yn-wrap">
+      <div class="yn-card yes" onclick="pick('broadcom',true,this)">
+        <span class="yn-icon">✅</span>
+        <h3>Yes</h3>
+        <p>I have or suspect Broadcom WiFi</p>
+      </div>
+      <div class="yn-card no" onclick="pick('broadcom',false,this)">
+        <span class="yn-icon">❌</span>
+        <h3>No</h3>
+        <p>Other brand or unsure</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 5: RESULTS ═══════════════════════════════════════ -->
+  <div class="step" id="step5">
+    <button class="back-btn" onclick="goTo(4)">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Back
+    </button>
+    <div class="step-header">
+      <h2>Your recommended distributions</h2>
+      <p>Matched to your hardware era, experience level, and compatibility flags.</p>
+    </div>
+    <div class="result-summary" id="resultSummary"></div>
+    <div class="distros" id="distrosGrid"></div>
+    <button class="restart-btn" onclick="restart()">↺ Start over</button>
+  </div>
+
+</div>
+
+<script>
+/* ── STATE ──────────────────────────────────────────────────── */
+const S = { era:null, exp:null, nvidia:null, broadcom:null };
+
+/* ── THEME ──────────────────────────────────────────────────── */
+function toggleTheme(){
+  const dark = document.documentElement.classList.toggle('dark');
+  document.getElementById('themeIcon').textContent  = dark ? '☀️' : '🌙';
+  document.getElementById('themeLabel').textContent = dark ? 'Light mode' : 'Dark mode';
+}
+
+/* ── NAVIGATION ─────────────────────────────────────────────── */
+function goTo(n){
+  document.querySelectorAll('.step').forEach((s,i)=>s.classList.toggle('active',i+1===n));
+  for(let i=1;i<=4;i++){
+    const d=document.getElementById('pd'+i);
+    d.classList.remove('active','done');
+    if(i<n) d.classList.add('done');
+    else if(i===n) d.classList.add('active');
+  }
+  window.scrollTo({top:
