@@ -497,9 +497,9 @@ const PICKS = {
   legacy: { new:['mxLinux','linuxLite','lubuntu'],casual:['mxLinux','lubuntu','linuxLite'],
             gamer:['mxLinux','lubuntu','endeavour'],power:['debian','mxLinux','voidLinux'] },
   golden: { new:['linuxMint','ubuntu','zorin'],  casual:['linuxMint','ubuntu','elementary'],
-            gamer:['popOS','linuxMint','fedora'], power:['fedora','endeavour','debian'] },
+            gamer:['nobara','linuxMint','fedora'], power:['fedora','endeavour','debian'] },
   modern: { new:['ubuntu','linuxMint','zorin'],  casual:['ubuntu','fedora','elementary'],
-            gamer:['popOS','endeavour','fedora'], power:['arch','fedora','opensuse'] },
+            gamer:['nobara','endeavour','fedora'], power:['arch','fedora','opensuse'] },
 };
 
 const DB = {
@@ -545,9 +545,9 @@ const DB = {
   fedora:    { name:'Fedora Workstation',badge:'Fresh Kernel',     bc:'green',
     desc:'Ships with the newest kernel of any mainstream distro — critical for cutting-edge hardware. GNOME-first, Wayland-first.',
     url:'https://fedoraproject.org' },
-  popOS:     { name:'Pop!_OS',          badge:'Best NVIDIA Support',bc:'green',
-    desc:'Built by hardware company System76. Ships a dedicated NVIDIA ISO — no manual driver wrestling. Gaming-ready out of the box.',
-    url:'https://pop.system76.com' },
+  nobara:    { name:'Nobara Linux',      badge:'Gaming Optimized',  bc:'green',
+    desc:'Fedora-based and built specifically for gaming and content creation. Ships with NVIDIA drivers, Steam, Proton patches, and multimedia codecs pre-installed. No hunting for drivers.',
+    url:'https://nobaraproject.org' },
   endeavour: { name:'EndeavourOS',      badge:'Arch Made Friendly', bc:'blue',
     desc:'Arch Linux without the intimidating manual install. GUI installer, rolling releases, always the latest kernel support.',
     url:'https://endeavouros.com' },
@@ -572,7 +572,7 @@ function buildWhy(id){
     notes.push('Legacy NVIDIA 340.x/390.x drivers are needed for your era — <strong>MX Linux and Debian</strong> have the best track record here.');
 
   if(nvidia){
-    if(id==='popOS')   notes.push('Pop!_OS ships a <strong>dedicated NVIDIA ISO</strong> — drivers are pre-installed, no setup required.');
+    if(id==='nobara')   notes.push('Nobara ships with <strong>NVIDIA drivers pre-installed</strong> — one of the easiest out-of-the-box NVIDIA experiences on Linux.');
     else if(['linuxMint','ubuntu'].includes(id)) notes.push('Includes a <strong>Driver Manager</strong> that installs NVIDIA proprietary drivers in a few clicks.');
     else if(id==='mxLinux') notes.push('MX Linux\'s driver installer is well-regarded for getting <strong>older NVIDIA cards working</strong>.');
   }
@@ -591,7 +591,7 @@ function buildWhy(id){
     if(id==='linuxMint') notes.push('Mint\'s forums are beginner-friendly — almost every question has already been answered.');
   }
   if(exp==='gamer'){
-    if(id==='popOS')     notes.push('<strong>Steam and Proton</strong> work out of the box; Pop!_OS is tuned for gaming performance.');
+    if(id==='nobara')    notes.push('<strong>Steam, Proton, and gaming patches</strong> come pre-configured — it\'s built for this from the ground up.');
     if(id==='endeavour') notes.push('Rolling releases mean <strong>Mesa and kernel updates</strong> arrive fast — important for gaming driver improvements.');
   }
   if(exp==='power'){
