@@ -469,4 +469,177 @@ function goTo(n){
     if(i<n) d.classList.add('done');
     else if(i===n) d.classList.add('active');
   }
-  window.scrollTo({top:
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ── PICK ───────────────────────────────────────────────────── */
+function pick(key, val, card){
+  S[key] = val;
+
+  // deselect siblings
+  const selector = key==='era' ? '.era-card'
+                 : key==='exp' ? '.exp-card'
+                 : `#step${key==='nvidia'?3:4} .yn-card`;
+  document.querySelectorAll(selector).forEach(c=>c.classList.remove('selected'));
+  card.classList.add('selected');
+
+  const next = {era:2, exp:3, nvidia:4, broadcom:'results'}[key];
+  setTimeout(()=>{
+    if(next==='results'){ buildResults(); goTo(5); }
+    else goTo(next);
+  }, 240);
+}
+
+/* ── DISTRO PICKS ───────────────────────────────────────────── */
+const PICKS = {
+  antique:{ new:['antiX','linuxLite','puppy'],   casual:['antiX','puppy','linuxLite'],
+            gamer:['antiX','mxLinux','slitaz'],  power:['antiX','voidLinux','alpine'] },
+  legacy: { new:['mxLinux','linuxLite','lubuntu'],casual:['mxLinux','lubuntu','linuxLite'],
+            gamer:['mxLinux','lubuntu','endeavour'],power:['debian','mxLinux','voidLinux'] },
+  golden: { new:['linuxMint','ubuntu','zorin'],  casual:['linuxMint','ubuntu','elementary'],
+            gamer:['popOS','linuxMint','fedora'], power:['fedora','endeavour','debian'] },
+  modern: { new:['ubuntu','linuxMint','zorin'],  casual:['ubuntu','fedora','elementary'],
+            gamer:['popOS','endeavour','fedora'], power:['arch','fedora','opensuse'] },
+};
+
+const DB = {
+  antiX:     { name:'antiX',            badge:'Ultra Lightweight', bc:'green',
+    desc:'Built for 32-bit machines with as little as 256 MB RAM. Debian-based, no systemd, runs on hardware others gave up on.',
+    url:'https://antixlinux.com' },
+  linuxLite: { name:'Linux Lite',       badge:'Windows-Friendly',  bc:'blue',
+    desc:'Designed to ease Windows users into Linux. XFCE desktop, low resource use, and a step-by-step "Lite Welcome" setup app.',
+    url:'https://linuxliteos.com' },
+  puppy:     { name:'Puppy Linux',      badge:'Runs from RAM',     bc:'green',
+    desc:'Boots entirely into RAM — blazing fast on ancient hardware. Great for machines with failing drives or very limited storage.',
+    url:'https://puppylinux-woof-ce.github.io' },
+  mxLinux:   { name:'MX Linux',         badge:'Best All-Rounder',  bc:'green',
+    desc:'Consistently one of the most popular distros. XFCE or KDE, Debian Stable base, and excellent hardware compatibility tools.',
+    url:'https://mxlinux.org' },
+  lubuntu:   { name:'Lubuntu',          badge:'Lightweight Ubuntu', bc:'blue',
+    desc:'Ubuntu\'s official lightweight sibling using LXQt. Familiar packaging, much smaller footprint. Great for 2–4 GB RAM machines.',
+    url:'https://lubuntu.me' },
+  slitaz:    { name:'SliTaz',           badge:'Micro Distro',      bc:'green',
+    desc:'A complete system under 50 MB. Rolls into RAM and still gives you a graphical desktop. For truly extreme cases.',
+    url:'https://www.slitaz.org' },
+  voidLinux: { name:'Void Linux',       badge:'Independent',       bc:'blue',
+    desc:'Not based on Debian or Arch — fully independent with its own package manager (xbps). No systemd. Great for digging in.',
+    url:'https://voidlinux.org' },
+  alpine:    { name:'Alpine Linux',     badge:'Minimal / Secure',  bc:'green',
+    desc:'Tiny and secure. Widely used in containers and servers. Desktop use requires manual setup — power users only.',
+    url:'https://alpinelinux.org' },
+  debian:    { name:'Debian',           badge:'The Foundation',    bc:'blue',
+    desc:'The rock Ubuntu, MX Linux and dozens of others are built on. Stable release cycle, massive package archive.',
+    url:'https://debian.org' },
+  linuxMint: { name:'Linux Mint',       badge:'Most Recommended',  bc:'green',
+    desc:'The go-to for ex-Windows users worldwide. Cinnamon desktop, Ubuntu/Debian base, and a driver manager that handles NVIDIA gracefully.',
+    url:'https://linuxmint.com' },
+  ubuntu:    { name:'Ubuntu',           badge:'Largest Community', bc:'blue',
+    desc:'Most widely documented distro on the planet. LTS releases get 5 years of updates. Hardware from Golden era onward works flawlessly.',
+    url:'https://ubuntu.com' },
+  zorin:     { name:'Zorin OS',         badge:'Windows Look & Feel',bc:'blue',
+    desc:'Purpose-built to look and feel like Windows, reducing friction for switchers. The free Core edition is excellent.',
+    url:'https://zorin.com/os' },
+  elementary:{ name:'elementary OS',   badge:'macOS-Like',         bc:'blue',
+    desc:'The most polished, design-focused Linux distro. If you care how things look and feel, the Pantheon desktop is genuinely beautiful.',
+    url:'https://elementary.io' },
+  fedora:    { name:'Fedora Workstation',badge:'Fresh Kernel',     bc:'green',
+    desc:'Ships with the newest kernel of any mainstream distro — critical for cutting-edge hardware. GNOME-first, Wayland-first.',
+    url:'https://fedoraproject.org' },
+  popOS:     { name:'Pop!_OS',          badge:'Best NVIDIA Support',bc:'green',
+    desc:'Built by hardware company System76. Ships a dedicated NVIDIA ISO — no manual driver wrestling. Gaming-ready out of the box.',
+    url:'https://pop.system76.com' },
+  endeavour: { name:'EndeavourOS',      badge:'Arch Made Friendly', bc:'blue',
+    desc:'Arch Linux without the intimidating manual install. GUI installer, rolling releases, always the latest kernel support.',
+    url:'https://endeavouros.com' },
+  arch:      { name:'Arch Linux',       badge:'Maximum Control',   bc:'blue',
+    desc:'For users who want to understand every layer. Rolling, minimal, endlessly configurable. The Arch Wiki is legendary.',
+    url:'https://archlinux.org' },
+  opensuse:  { name:'openSUSE Tumbleweed',badge:'Rolling & Tested', bc:'green',
+    desc:'Rolling release with automated QA testing. Fast packages without chaos. Excellent Ryzen + NVIDIA support via RPM Fusion.',
+    url:'https://get.opensuse.org/tumbleweed' },
+};
+
+/* ── WHY THIS FITS YOU ──────────────────────────────────────── */
+function buildWhy(id){
+  const notes = [];
+  const {era,exp,nvidia,broadcom} = S;
+
+  if((era==='antique'||era==='legacy') && ['antiX','puppy','slitaz'].includes(id))
+    notes.push('Runs well on <strong>32-bit / very low RAM</strong> systems from your era.');
+  if(id==='mxLinux' && (era==='antique'||era==='legacy'))
+    notes.push('MX Linux includes a <strong>driver assistant</strong> built for older and orphaned hardware.');
+  if(era==='legacy' && nvidia)
+    notes.push('Legacy NVIDIA 340.x/390.x drivers are needed for your era — <strong>MX Linux and Debian</strong> have the best track record here.');
+
+  if(nvidia){
+    if(id==='popOS')   notes.push('Pop!_OS ships a <strong>dedicated NVIDIA ISO</strong> — drivers are pre-installed, no setup required.');
+    else if(['linuxMint','ubuntu'].includes(id)) notes.push('Includes a <strong>Driver Manager</strong> that installs NVIDIA proprietary drivers in a few clicks.');
+    else if(id==='mxLinux') notes.push('MX Linux\'s driver installer is well-regarded for getting <strong>older NVIDIA cards working</strong>.');
+  }
+
+  if(broadcom){
+    if(['mxLinux','linuxMint','ubuntu','lubuntu'].includes(id))
+      notes.push('Ships with tools to install <strong>Broadcom WiFi firmware</strong> — often just one checkbox during setup.');
+    else if(id==='debian')
+      notes.push('The Debian non-free firmware ISO includes <strong>Broadcom drivers</strong> ready at install time.');
+    else
+      notes.push('You may need to install <strong>Broadcom firmware manually</strong> — check the distro wiki before you start.');
+  }
+
+  if(exp==='new'){
+    if(id==='zorin')     notes.push('The <strong>Windows-style layout</strong> means almost nothing feels unfamiliar on day one.');
+    if(id==='linuxMint') notes.push('Mint\'s forums are beginner-friendly — almost every question has already been answered.');
+  }
+  if(exp==='gamer'){
+    if(id==='popOS')     notes.push('<strong>Steam and Proton</strong> work out of the box; Pop!_OS is tuned for gaming performance.');
+    if(id==='endeavour') notes.push('Rolling releases mean <strong>Mesa and kernel updates</strong> arrive fast — important for gaming driver improvements.');
+  }
+  if(exp==='power'){
+    if(['arch','endeavour'].includes(id)) notes.push('The <strong>Arch User Repository (AUR)</strong> gives access to nearly any software that exists.');
+    if(id==='voidLinux') notes.push('No systemd, fast boot, <strong>xbps package manager</strong> — a clean slate for advanced users.');
+  }
+
+  if(!notes.length) notes.push('A solid match for your hardware era and experience level.');
+  return notes.join(' ');
+}
+
+/* ── BUILD RESULTS ──────────────────────────────────────────── */
+const ERA_LBL = {antique:'Antique Era (Pre-2006)',legacy:'Legacy Era (2006–2011)',golden:'Golden Era (2012–2019)',modern:'Modern Era (2020–Now)'};
+const EXP_LBL = {new:'New to Linux',casual:'Casual User',gamer:'Gamer',power:'Power User'};
+
+function buildResults(){
+  const picks = PICKS[S.era][S.exp];
+  const flags = [S.nvidia&&'NVIDIA GPU', S.broadcom&&'Broadcom WiFi'].filter(Boolean);
+
+  document.getElementById('resultSummary').innerHTML =
+    `Era: <span>${ERA_LBL[S.era]}</span> &nbsp;·&nbsp; Use: <span>${EXP_LBL[S.exp]}</span>`+
+    (flags.length ? ` &nbsp;·&nbsp; Flags: <span>${flags.join(', ')}</span>` : '');
+
+  const grid = document.getElementById('distrosGrid');
+  grid.innerHTML = '';
+  picks.forEach((id,i)=>{
+    const d = DB[id];
+    const el = document.createElement('div');
+    el.className = 'distro-card';
+    el.style.animationDelay = (i*0.1)+'s';
+    el.innerHTML = `
+      <div class="distro-top">
+        <div class="distro-name">${d.name}</div>
+        <span class="distro-badge bg-${d.bc}">${d.badge}</span>
+      </div>
+      <p class="distro-desc">${d.desc}</p>
+      <div class="why-box"><strong>Why this fits you:</strong> ${buildWhy(id)}</div>
+      <a class="distro-link" href="${d.url}" target="_blank" rel="noopener">Visit official site →</a>`;
+    grid.appendChild(el);
+  });
+}
+
+/* ── RESTART ────────────────────────────────────────────────── */
+function restart(){
+  Object.keys(S).forEach(k=>S[k]=null);
+  document.querySelectorAll('.era-card,.exp-card,.yn-card').forEach(c=>c.classList.remove('selected'));
+  goTo(1);
+}
+</script>
+</body>
+</html>
